@@ -1,0 +1,1135 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#1f6f5c">
+<title>Transcritor de Receita Médica</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%231f6f5c'/%3E%3Cpath d='M8 9h16v2H8zm0 5h16v2H8zm0 5h10v2H8z' fill='white'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --accent: #1f6f5c;
+    --accent-dark: #164f43;
+    --ink: #1c2824;
+    --muted: #5d6d67;
+    --line: #d5e2dc;
+    --bg: #f4f7f5;
+    --card: #ffffff;
+    --ok-bg: #e7f4ef;
+    --ok: #1f6f5c;
+    --rev-bg: #fff5e4;
+    --rev: #8a5a00;
+    --bad-bg: #fdeceb;
+    --bad: #9d2c2c;
+    --sans: "IBM Plex Sans", "Segoe UI", sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body { font-family: var(--sans); color: var(--ink); background: var(--bg); line-height: 1.45; }
+  .topo { background: var(--accent); color: #fff; padding: 22px 20px 20px; }
+  .topo-interno, main { max-width: 1120px; margin: 0 auto; }
+  .olho { margin: 0 0 4px; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; opacity: 0.85; }
+  h1 { margin: 0; font-size: 28px; font-weight: 600; letter-spacing: -0.02em; }
+  .lede { margin: 6px 0 0; max-width: 72ch; color: #e7f4ef; font-size: 15px; }
+  main { padding: 18px 20px 48px; }
+  .barra-sentido { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; margin-bottom: 14px; }
+  .barra-sentido span.rotulo { font-size: 13px; font-weight: 600; color: var(--muted); }
+  .segmento { display: flex; flex-wrap: wrap; gap: 6px; }
+  .segmento button, .acoes button, .dicionarios button {
+    font-family: var(--sans); font-size: 14px; border-radius: 8px; border: 1px solid var(--line);
+    background: var(--card); color: var(--ink); padding: 8px 12px; min-height: 40px; cursor: pointer;
+  }
+  .segmento button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .segmento button:focus-visible, .acoes button:focus-visible, .dicionarios button:focus-visible, textarea:focus-visible, summary:focus-visible {
+    outline: 2px solid var(--accent); outline-offset: 2px;
+  }
+  .detectado { font-family: var(--mono); font-size: 12px; color: var(--accent-dark); }
+  .grade { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .cartao { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 14px; }
+  .cartao-topo { display: flex; justify-content: space-between; gap: 8px 12px; align-items: flex-start; margin-bottom: 8px; flex-wrap: wrap; }
+  h2 { margin: 0; font-size: 16px; font-weight: 600; }
+  .hint { margin: 2px 0 0; color: var(--muted); font-size: 13px; }
+  .acoes { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 10px; }
+  #copiar { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+  #copiar:hover, .segmento button[aria-pressed="true"]:hover { background: var(--accent-dark); }
+  textarea {
+    width: 100%; min-height: 320px; resize: vertical; border: 1px solid var(--line); border-radius: 8px;
+    padding: 12px; font-family: var(--mono); font-size: 13.5px; line-height: 1.55; color: var(--ink); background: #fbfcfb;
+  }
+  #resultado { background: #fff; }
+  .painel { margin-top: 14px; }
+  .resumo { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0; }
+  .contagem { font-family: var(--mono); font-size: 12px; padding: 4px 8px; border-radius: 999px; background: #eef3f1; }
+  .vazio { color: var(--muted); margin: 8px 0 0; }
+  .tabela-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { text-align: left; vertical-align: top; padding: 8px 10px; border-bottom: 1px solid var(--line); }
+  th { font-size: 12px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+  td.mono { font-family: var(--mono); font-size: 12.5px; white-space: pre-line; }
+  .selo { display: inline-block; font-size: 12px; font-weight: 600; padding: 3px 8px; border-radius: 999px; }
+  .selo.ok { background: var(--ok-bg); color: var(--ok); }
+  .selo.conferir { background: var(--rev-bg); color: var(--rev); }
+  .selo.nao-interpretado { background: var(--bad-bg); color: var(--bad); }
+  .avisos { margin: 0; padding-left: 18px; }
+  .avisos li { margin: 2px 0; }
+  .dicionarios { margin-top: 14px; }
+  details { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; }
+  summary { cursor: pointer; font-weight: 600; color: var(--accent); }
+  .nota-dic { color: var(--muted); font-size: 13px; }
+  .grade-dic { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; }
+  .campo label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+  .campo .formato { display: block; color: var(--muted); font-weight: 400; font-size: 12px; }
+  .campo textarea { min-height: 96px; }
+  .campo.largo { grid-column: 1 / -1; }
+  .confirma { margin-top: 10px; padding: 10px; border-radius: 8px; background: var(--rev-bg); }
+  .rodape { margin-top: 16px; color: var(--muted); font-size: 12px; }
+  @media (max-width: 899px) {
+    h1 { font-size: 23px; }
+    .grade, .grade-dic { grid-template-columns: 1fr; }
+    textarea { min-height: 220px; }
+    .topo { padding: 18px 16px; }
+    main { padding: 14px 16px 36px; }
+  }
+</style>
+</head>
+<body>
+<header class="topo">
+  <div class="topo-interno">
+    <p class="olho">Consultório</p>
+    <h1>Transcritor de Receita Médica</h1>
+    <p class="lede">Converte o código de posologia em texto da receita, e o texto de volta em código. A conferência fica na tela. Nenhum dado sai deste navegador.</p>
+  </div>
+</header>
+<main>
+  <div class="barra-sentido">
+    <span class="rotulo">Sentido</span>
+    <div class="segmento" role="radiogroup" aria-label="Sentido da transcrição">
+      <button type="button" data-sentido="auto" aria-pressed="true">Automático</button>
+      <button type="button" data-sentido="codigo" aria-pressed="false">Código → texto</button>
+      <button type="button" data-sentido="texto" aria-pressed="false">Texto → código</button>
+    </div>
+    <span class="detectado" id="sentido-detectado" aria-live="polite"></span>
+  </div>
+  <div class="grade">
+    <section class="cartao" aria-labelledby="tit-entrada">
+      <div class="cartao-topo">
+        <div>
+          <h2 id="tit-entrada">Entrada</h2>
+          <p class="hint">Uma medicação por linha. Código com hífen (1-0-1) ou compacto (101).</p>
+        </div>
+      </div>
+      <div class="acoes">
+        <button type="button" id="copiar">Copiar resultado</button>
+        <button type="button" id="ex-codigo">Exemplo código</button>
+        <button type="button" id="ex-texto">Exemplo texto</button>
+        <button type="button" id="limpar">Limpar</button>
+      </div>
+      <label for="entrada" style="position:absolute;left:-9999px">Texto de entrada</label>
+      <textarea id="entrada" spellcheck="false" autocomplete="off" placeholder="Losartana 50 mg 1-0-1"></textarea>
+    </section>
+    <section class="cartao" aria-labelledby="tit-resultado">
+      <div class="cartao-topo">
+        <div>
+          <h2 id="tit-resultado">Resultado</h2>
+          <p class="hint">Editável. Dá para ajustar antes de copiar; se a entrada mudar, o texto é gerado de novo.</p>
+        </div>
+      </div>
+      <label for="resultado" style="position:absolute;left:-9999px">Resultado editável</label>
+      <textarea id="resultado" spellcheck="false" autocomplete="off" placeholder="O texto transcrito aparece aqui."></textarea>
+    </section>
+  </div>
+  <section class="cartao painel" aria-labelledby="tit-conf">
+    <h2 id="tit-conf">Conferência</h2>
+    <p class="hint">Tabela da entrada para a saída. Leia o selo e os avisos antes de levar o texto para a receita.</p>
+    <div class="resumo" id="resumo"></div>
+    <p class="vazio" id="vazio-conf">Nenhuma linha para conferir. Cole um código ou o texto de uma receita.</p>
+    <div class="tabela-wrap" id="tabela-wrap" hidden>
+      <table>
+        <thead>
+          <tr><th>Entrada</th><th>Saída</th><th>Selo</th><th>Avisos</th></tr>
+        </thead>
+        <tbody id="corpo-conf"></tbody>
+      </table>
+    </div>
+  </section>
+  <section class="dicionarios">
+    <details>
+      <summary>Dicionários</summary>
+      <p class="nota-dic">Editáveis e salvos só neste navegador. A prioridade é posologia fixa, depois jejum, depois refeições, depois a regra geral. Restaurar padrão descarta o que foi salvo aqui.</p>
+      <div class="grade-dic" id="grade-dic"></div>
+      <div class="acoes" style="margin-top:12px">
+        <button type="button" id="restaurar">Restaurar padrão</button>
+      </div>
+      <div class="confirma" id="confirma-restaurar" hidden>
+        <p>As edições salvas neste navegador serão apagadas.</p>
+        <button type="button" id="confirma-sim">Confirmar restauração</button>
+        <button type="button" id="confirma-nao">Cancelar</button>
+      </div>
+    </details>
+  </section>
+  <p class="rodape">Ferramenta de formatação. A revisão humana da posologia continua obrigatória.</p>
+</main>
+<script id="transcritor-logica">
+(function () {
+  'use strict';
+
+  var FRASE_B12 = 'TOMAR 01 COMPRIMIDO SUBLINGUAL CEDO EM JEJUM POR 3 MESES';
+  var FRASE_VITD = 'TOMAR 01 COMPRIMIDO UMA VEZ POR SEMANA';
+  var FRASE_VITD_ANTIGA = 'TOMAR 01 COMPRIMIDO POR SEMANA DURANTE UMA REFEIÇÃO';
+  var FRASE_JEJUM = 'TOMAR 01 COMPRIMIDO CEDO EM JEJUM';
+  var AVISO = {
+    ignorado: 'código ignorado (posologia fixa / regra do jejum)',
+    semDose: 'sem dose no nome',
+    zeros: 'todas as doses são zero'
+  };
+  var UNIDADES = ['MG', 'MCG', 'G', 'UI', 'ML', '%'];
+  var IONS = ['POTÁSSIO', 'SÓDIO', 'MAGNÉSIO', 'CÁLCIO', 'FERRO', 'ZINCO', 'LÍTIO', 'COBRE', 'IODO', 'SELÊNIO', 'MANGANÊS'];
+  var FORMAS_CAP = ['CAPS', 'CAP', 'CAPSULA', 'CÁPSULA', 'CAPSULAS', 'CÁPSULAS'];
+  var FORMAS_IGNORADAS = ['CP', 'COMP'];
+
+  var PADRAO = {
+    cabecalho: 'USO ORAL CONTÍNUO:',
+    abreviacoes: [{ de: 'HCTZ', para: 'HIDROCLOROTIAZIDA' }],
+    fixa: [
+      { nome: 'VITAMINA B12', texto: FRASE_B12 },
+      { nome: 'MECOBALAMINA', texto: FRASE_B12 },
+      { nome: 'MECOBÊ', texto: FRASE_B12 },
+      { nome: 'B12', texto: FRASE_B12 },
+      { nome: 'VITAMINA D', texto: FRASE_VITD },
+      { nome: 'VITD', texto: FRASE_VITD },
+      { nome: 'D-PREV', texto: FRASE_VITD },
+      { nome: 'ADDERA D3', texto: FRASE_VITD },
+      { nome: 'ADDERA', texto: FRASE_VITD },
+      { nome: 'DOSS', texto: FRASE_VITD },
+      { nome: 'ALTA D', texto: FRASE_VITD }
+    ],
+    jejum: ['LEVOTIROXINA', 'PURAN', 'LEVOID', 'SYNTHROID', 'EUTHYROX'],
+    refeicoes: ['METFORMINA', 'GLIFAGE'],
+    sais: ['BESILATO', 'CLORIDRATO', 'DICLORIDRATO', 'MALEATO', 'SUCCINATO', 'TARTARATO', 'HEMITARTARATO', 'MESILATO', 'FUMARATO', 'HEMIFUMARATO', 'BROMIDRATO', 'HICLATO', 'ACETATO', 'VALERATO', 'SULFATO', 'CITRATO', 'FOSFATO', 'NITRATO', 'OXALATO'],
+    sufixos: ['POTÁSSICA', 'POTÁSSICO', 'SÓDICA', 'SÓDICO', 'CÁLCICA', 'CÁLCICO', 'MAGNÉSICA', 'MAGNÉSICO', 'MONOSSÓDICO', 'DISSÓDICO', 'MONOIDRATADO', 'MONOIDRATADA', 'DI-HIDRATADO', 'DI-HIDRATADA', 'DIHIDRATADO', 'HIDRATADO', 'HIDRATADA']
+  };
+
+  var EXEMPLO_CODIGO = [
+    'Losartana potássica 50 mg 1-0-1',
+    'Besilato de anlodipino 5 mg 1-0-0',
+    'HCTZ 25 mg 1-0-0',
+    'Atorvastatina 40 mg 0-0-1',
+    'Metformina 850 mg 1-0-1',
+    'Levotiroxina 75 mcg 101',
+    'Omeprazol 20 mg caps 1-0-0',
+    'Citrato de potássio 10 ml 1-0-1',
+    'B12 1000 mcg 1-0-0',
+    'D-PREV 7000UI/SEM',
+    'Sinvastatina 20 mg 1/2-0-1/2'
+  ].join('\n');
+
+  var EXEMPLO_TEXTO = [
+    'USO ORAL CONTÍNUO:',
+    '',
+    '-LOSARTANA 50MG',
+    'TOMAR 01 COMPRIMIDO DE 12/12H',
+    '',
+    '-HIDROCLOROTIAZIDA 25MG',
+    'TOMAR 01 COMPRIMIDO PELA MANHÃ',
+    '',
+    '-METFORMINA 850MG',
+    'TOMAR 01 COMPRIMIDO APÓS CAFÉ DA MANHÃ E 01 COMPRIMIDO APÓS JANTAR',
+    '',
+    '-LEVOTIROXINA 75MCG',
+    'TOMAR 01 COMPRIMIDO CEDO EM JEJUM'
+  ].join('\n');
+
+  function fold(s) {
+    return String(s || '')
+      .toLocaleLowerCase('pt-BR')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]+/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  function foldIdx(s) {
+    var mapa = { á: 'a', à: 'a', â: 'a', ã: 'a', ä: 'a', é: 'e', è: 'e', ê: 'e', ë: 'e', í: 'i', ì: 'i', î: 'i', ï: 'i', ó: 'o', ò: 'o', ô: 'o', õ: 'o', ö: 'o', ú: 'u', ù: 'u', û: 'u', ü: 'u', ç: 'c', ñ: 'n' };
+    var baixo = String(s || '').toLocaleLowerCase('pt-BR');
+    var out = '';
+    for (var i = 0; i < baixo.length; i++) out += mapa[baixo.charAt(i)] || baixo.charAt(i);
+    return out;
+  }
+
+  function upper(s) {
+    return String(s || '').toLocaleUpperCase('pt-BR');
+  }
+
+  function temLetra(s) {
+    return /[A-Za-zÀ-ÖØ-öø-ÿ]/.test(String(s || ''));
+  }
+
+  function clonar(obj) {
+    return JSON.parse(JSON.stringify(obj));
+  }
+
+  function dicionariosPadrao() {
+    return clonar(PADRAO);
+  }
+
+  function linhasDe(texto) {
+    return String(texto || '').split(/\n/).map(function (l) { return l.trim(); }).filter(function (l) { return l && l.charAt(0) !== '#'; });
+  }
+
+  function pares(texto) {
+    return linhasDe(texto).map(function (l) {
+      var i = l.indexOf('=');
+      if (i === -1) return null;
+      var de = l.slice(0, i).trim();
+      var para = l.slice(i + 1).trim();
+      if (!de || !para) return null;
+      return { de: de, para: para };
+    }).filter(Boolean);
+  }
+
+  function dicionariosDeTexto(campos) {
+    var c = campos || {};
+    return {
+      cabecalho: String(c.cabecalho || 'USO ORAL CONTÍNUO:').trim() || 'USO ORAL CONTÍNUO:',
+      abreviacoes: pares(c.abreviacoes).map(function (p) { return { de: p.de, para: p.para }; }),
+      fixa: pares(c.fixa).map(function (p) { return { nome: p.de, texto: p.para }; }),
+      jejum: linhasDe(c.jejum),
+      refeicoes: linhasDe(c.refeicoes),
+      sais: linhasDe(c.sais),
+      sufixos: linhasDe(c.sufixos)
+    };
+  }
+
+  function textosDeDicionarios(dict) {
+    var d = dict || dicionariosPadrao();
+    return {
+      cabecalho: d.cabecalho || 'USO ORAL CONTÍNUO:',
+      abreviacoes: (d.abreviacoes || []).map(function (a) { return a.de + ' = ' + a.para; }).join('\n'),
+      fixa: (d.fixa || []).map(function (f) { return f.nome + ' = ' + f.texto; }).join('\n'),
+      jejum: (d.jejum || []).join('\n'),
+      refeicoes: (d.refeicoes || []).join('\n'),
+      sais: (d.sais || []).join('\n'),
+      sufixos: (d.sufixos || []).join('\n')
+    };
+  }
+
+  function completarDict(dict) {
+    var base = dicionariosPadrao();
+    var src = dict || {};
+    Object.keys(base).forEach(function (k) {
+      if (src[k] != null) base[k] = src[k];
+    });
+    return base;
+  }
+
+  function setFold(lista) {
+    var s = {};
+    (lista || []).forEach(function (item) { s[fold(item)] = true; });
+    return s;
+  }
+
+  function ehUnidade(t) {
+    return UNIDADES.indexOf(upper(String(t || '')).replace(/\.$/, '')) !== -1;
+  }
+
+  function ehDoseColada(t) {
+    return /^\d+(?:[.,]\d+)?(?:\/\d+(?:[.,]\d+)?)*(?:MG|MCG|G|UI|ML|%)$/i.test(String(t || ''));
+  }
+
+  function ehNumero(t) {
+    return /^\d+(?:[.,]\d+)?(?:\/\d+(?:[.,]\d+)?)*$/.test(String(t || ''));
+  }
+
+  function quartosDeToken(token) {
+    if (token == null) return null;
+    var t = String(token).trim().toLowerCase().replace(/\s+/g, '');
+    if (!t) return null;
+    if (t === 'x') return 4;
+    if (t === '½' || t === '1/2' || t === '0,5' || t === '0.5') return 2;
+    if (t === '¼' || t === '1/4') return 1;
+    if (t === '¾' || t === '3/4') return 3;
+    var frac = t.match(/^(\d{1,2})\/(\d{1,2})$/);
+    if (frac) {
+      var den = parseInt(frac[2], 10);
+      if (!den) return null;
+      return Math.round((parseInt(frac[1], 10) / den) * 4);
+    }
+    var dec = t.match(/^(\d{1,2})[.,](\d+)$/);
+    if (dec) return Math.round(parseFloat(dec[1] + '.' + dec[2]) * 4);
+    if (/^\d{1,2}$/.test(t)) return parseInt(t, 10) * 4;
+    return null;
+  }
+
+  function partirHifen(token) {
+    var t = String(token || '').trim();
+    if (t.indexOf('-') === -1) return null;
+    var partes = t.split('-');
+    if (partes.length < 2 || partes.length > 4) return null;
+    var pos = partes.map(quartosDeToken);
+    if (pos.some(function (p) { return p == null; })) return null;
+    return pos;
+  }
+
+  function normalizarTracos(s) {
+    return String(s || '')
+      .replace(/[–—]/g, '-')
+      .replace(/(\d)\s*\/\s*(\d)/g, '$1/$2')
+      .replace(/(?<=[\dxX½¼¾])\s*-\s*(?=[\dxX½¼¾])/g, '-');
+  }
+
+  function tokenizar(s) {
+    return normalizarTracos(s)
+      .replace(/[.;]+$/g, '')
+      .split(/\s+/)
+      .map(function (t) { return t.replace(/^[,;:.]+|[,;:.]+$/g, ''); })
+      .filter(Boolean);
+  }
+
+  function acharCodigo(tokens) {
+    var i;
+    for (i = 0; i < tokens.length; i++) {
+      var h = partirHifen(tokens[i]);
+      if (h) return { inicio: i, fim: i + 1, posicoes: h };
+    }
+    for (i = 0; i < tokens.length; i++) {
+      if (!/^[0-9]{2,4}$/.test(tokens[i])) continue;
+      if (tokens[i + 1] && ehUnidade(tokens[i + 1])) continue;
+      return {
+        inicio: i,
+        fim: i + 1,
+        posicoes: tokens[i].split('').map(function (d) { return quartosDeToken(d); })
+      };
+    }
+    return null;
+  }
+
+  function expandirAbreviacoes(tokens, dict) {
+    var regras = (dict.abreviacoes || []).map(function (a) {
+      return {
+        de: String(a.de || '').trim().split(/\s+/).filter(Boolean).map(fold),
+        para: String(a.para || '').trim().split(/\s+/).filter(Boolean)
+      };
+    }).filter(function (r) { return r.de.length && r.para.length; });
+    regras.sort(function (a, b) { return b.de.length - a.de.length; });
+    var out = [];
+    for (var i = 0; i < tokens.length;) {
+      var achou = false;
+      for (var r = 0; r < regras.length; r++) {
+        var regra = regras[r];
+        if (i + regra.de.length > tokens.length) continue;
+        var ok = true;
+        for (var k = 0; k < regra.de.length; k++) {
+          if (fold(tokens[i + k]) !== regra.de[k]) { ok = false; break; }
+        }
+        if (!ok) continue;
+        var prev = out.length ? fold(out[out.length - 1]) : '';
+        if (prev && prev === fold(regra.para[0])) out.push.apply(out, regra.para.slice(1));
+        else out.push.apply(out, regra.para);
+        i += regra.de.length;
+        achou = true;
+        break;
+      }
+      if (!achou) { out.push(tokens[i]); i++; }
+    }
+    return out;
+  }
+
+  function temIon(tokens) {
+    var ions = setFold(IONS);
+    return tokens.some(function (t) { return ions[fold(t)]; });
+  }
+
+  function tirarForma(tokens) {
+    var cap = setFold(FORMAS_CAP);
+    var ign = setFold(FORMAS_IGNORADAS);
+    var forma = null;
+    var out = [];
+    tokens.forEach(function (t) {
+      var f = fold(t);
+      if (cap[f]) { forma = 'capsula'; return; }
+      if (ign[f]) return;
+      out.push(t);
+    });
+    return { tokens: out, forma: forma };
+  }
+
+  function tirarSalPrefixo(tokens, dict) {
+    var sais = setFold(dict.sais);
+    var guard = 0;
+    while (guard < 3 && tokens.length >= 3 && sais[fold(tokens[0])] && fold(tokens[1]) === 'de') {
+      var resto = tokens.slice(2);
+      if (temIon(resto)) break;
+      tokens = resto;
+      guard++;
+    }
+    return tokens;
+  }
+
+  function tirarSufixo(tokens, dict) {
+    var suf = setFold(dict.sufixos);
+    return tokens.filter(function (t, i) { return i === 0 || !suf[fold(t)]; });
+  }
+
+  function juntarNumeroUnidade(tokens) {
+    var out = [];
+    for (var i = 0; i < tokens.length; i++) {
+      var num = String(tokens[i]).replace(/\s+/g, '');
+      if (ehNumero(num) && tokens[i + 1] && ehUnidade(tokens[i + 1])) {
+        out.push(num + upper(String(tokens[i + 1]).replace(/\.$/, '')));
+        i++;
+        continue;
+      }
+      var colado = num.match(/^(\d+(?:[.,]\d+)?(?:\/\d+(?:[.,]\d+)?)*)([A-Za-z%]+)$/);
+      if (colado && ehUnidade(colado[2])) {
+        out.push(colado[1] + upper(colado[2]));
+        continue;
+      }
+      out.push(tokens[i]);
+    }
+    return out;
+  }
+
+  function tirarFrequenciaDose(s) {
+    return String(s || '')
+      .replace(/(\d(?:[\d.,]*\d)?)\s*(mg|mcg|g|ui|ml|%)\s*\/\s*sem(?:ana)?\.?/gi, '$1$2')
+      .replace(/\s*\/\s*sem(?:ana)?\.?(?=\s|$|[,;])/gi, ' ')
+      .replace(/[ \t]{2,}/g, ' ');
+  }
+
+  function limparNome(texto, dict) {
+    dict = completarDict(dict);
+    var separado = tirarForma(expandirAbreviacoes(tokenizar(tirarFrequenciaDose(texto)), dict));
+    var tokens = tirarSufixo(tirarSalPrefixo(separado.tokens, dict), dict);
+    tokens = juntarNumeroUnidade(tokens);
+    return {
+      nome: upper(tokens.join(' ').replace(/\s+/g, ' ').trim()),
+      forma: separado.forma
+    };
+  }
+
+  function nomeBase(nome) {
+    var tokens = String(nome || '').split(/\s+/).filter(Boolean);
+    var out = [];
+    for (var i = 0; i < tokens.length; i++) {
+      if (ehDoseColada(tokens[i])) continue;
+      if (ehNumero(tokens[i]) && tokens[i + 1] && ehUnidade(tokens[i + 1])) { i++; continue; }
+      out.push(tokens[i]);
+    }
+    return out.join(' ');
+  }
+
+  function temDose(nome) {
+    var tokens = String(nome || '').split(/\s+/).filter(Boolean);
+    for (var i = 0; i < tokens.length; i++) {
+      if (ehDoseColada(tokens[i])) return true;
+      if (ehNumero(tokens[i]) && tokens[i + 1] && ehUnidade(tokens[i + 1])) return true;
+    }
+    return false;
+  }
+
+  function casaNome(nome, entrada) {
+    var base = fold(nomeBase(nome));
+    var alvo = fold(entrada);
+    if (!base || !alvo) return false;
+    if (base === alvo) return true;
+    var esc = alvo.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    return new RegExp('(?:^| )' + esc + '(?:$| )').test(base);
+  }
+
+  function casaLista(nome, lista) {
+    return (lista || []).some(function (item) { return casaNome(nome, item); });
+  }
+
+  function textoFixo(nome, dict) {
+    var hits = (dict.fixa || []).filter(function (f) { return casaNome(nome, f.nome); });
+    hits.sort(function (a, b) { return fold(b.nome).length - fold(a.nome).length; });
+    return hits.length ? hits[0].texto : '';
+  }
+
+  function escolherRegra(nome, dict) {
+    if (textoFixo(nome, dict)) return 'fixa';
+    if (casaLista(nome, dict.jejum)) return 'jejum';
+    if (casaLista(nome, dict.refeicoes)) return 'refeicoes';
+    return 'geral';
+  }
+
+  function ehCabecalho(linha, dict) {
+    var f = fold(String(linha || '').replace(/^[-–—•*]\s*/, ''));
+    if (!f) return false;
+    if (dict && dict.cabecalho && fold(dict.cabecalho) === f) return true;
+    return f === 'uso oral continuo' || f === 'uso oral' || f === 'uso interno' || f === 'uso externo';
+  }
+
+  function fmtCanon(quartos) {
+    if (quartos % 4 === 0) return String(quartos / 4);
+    if (quartos === 1) return '1/4';
+    if (quartos === 2) return '1/2';
+    if (quartos === 3) return '3/4';
+    if (quartos % 4 === 2) return Math.floor(quartos / 4) + ',5';
+    return (quartos / 4).toString().replace('.', ',');
+  }
+
+  function fmtTexto(quartos, forma) {
+    var sing = forma === 'capsula' ? 'CÁPSULA' : 'COMPRIMIDO';
+    var plur = forma === 'capsula' ? 'CÁPSULAS' : 'COMPRIMIDOS';
+    if (quartos === 1) return '1/4 ' + sing;
+    if (quartos === 2) return '1/2 ' + sing;
+    if (quartos === 3) return '3/4 ' + sing;
+    if (quartos % 4 === 2 && quartos >= 6) {
+      return Math.floor(quartos / 4) + ' E 1/2 ' + plur;
+    }
+    if (quartos % 4 === 0) {
+      var n = quartos / 4;
+      return String(n).padStart(2, '0') + ' ' + (n > 1 ? plur : sing);
+    }
+    var valor = quartos / 4;
+    return valor.toString().replace('.', ',') + ' ' + (valor > 1 ? plur : sing);
+  }
+
+  function iguaisNaoZero(pos) {
+    return pos.length > 0 && pos.every(function (q) { return q === pos[0] && q > 0; });
+  }
+
+  function ehX0X(pos) {
+    return pos.length === 3 && pos[1] === 0 && pos[0] > 0 && pos[0] === pos[2];
+  }
+
+  function rotulosGeral(n) {
+    if (n === 2) return ['PELA MANHÃ', 'À NOITE'];
+    if (n === 4) return ['PELA MANHÃ', 'APÓS ALMOÇO', 'À TARDE', 'À NOITE'];
+    return ['PELA MANHÃ', 'APÓS ALMOÇO', 'À NOITE'];
+  }
+
+  function rotulosRefeicao(n) {
+    if (n === 2) return ['APÓS CAFÉ DA MANHÃ', 'APÓS JANTAR'];
+    if (n === 4) return ['APÓS CAFÉ DA MANHÃ', 'APÓS ALMOÇO', 'À TARDE', 'APÓS JANTAR'];
+    return ['APÓS CAFÉ DA MANHÃ', 'APÓS ALMOÇO', 'APÓS JANTAR'];
+  }
+
+  function listar(pos, rotulos, forma) {
+    var partes = [];
+    pos.forEach(function (q, i) {
+      if (!q) return;
+      partes.push(fmtTexto(q, forma) + ' ' + rotulos[i]);
+    });
+    if (!partes.length) return '(REVISAR POSOLOGIA)';
+    if (partes.length === 1) return 'TOMAR ' + partes[0];
+    if (partes.length === 2) return 'TOMAR ' + partes[0] + ' E ' + partes[1];
+    return 'TOMAR ' + partes.slice(0, -1).join(', ') + ' E ' + partes[partes.length - 1];
+  }
+
+  function fraseGeral(pos, forma) {
+    if (pos.every(function (q) { return q === 0; })) return null;
+    if (iguaisNaoZero(pos)) {
+      var intervalo = { 2: '12/12H', 3: '8/8H', 4: '6/6H' }[pos.length];
+      return 'TOMAR ' + fmtTexto(pos[0], forma) + ' ' + intervalo;
+    }
+    if (ehX0X(pos)) return 'TOMAR ' + fmtTexto(pos[0], forma) + ' DE 12/12H';
+    return listar(pos, rotulosGeral(pos.length), forma);
+  }
+
+  function fraseRefeicao(pos, forma) {
+    if (pos.every(function (q) { return q === 0; })) return null;
+    if (pos.length === 3 && iguaisNaoZero(pos)) {
+      return 'TOMAR ' + fmtTexto(pos[0], forma) + ' APÓS CAFÉ DA MANHÃ, ALMOÇO E JANTAR';
+    }
+    if (ehX0X(pos)) {
+      var q = fmtTexto(pos[0], forma);
+      return 'TOMAR ' + q + ' APÓS CAFÉ DA MANHÃ E ' + q + ' APÓS JANTAR';
+    }
+    return listar(pos, rotulosRefeicao(pos.length), forma);
+  }
+
+  function aplicarCaps(frase, forma) {
+    if (forma !== 'capsula') return frase;
+    return frase.replace(/COMPRIMIDOS/g, 'CÁPSULAS').replace(/COMPRIMIDO/g, 'CÁPSULA');
+  }
+
+  function limparExtra(tokens) {
+    var texto = tokens.join(' ').replace(/\s+/g, ' ').trim().replace(/^[,;:.]+/, '').trim();
+    if (!texto || !/[A-Za-zÀ-ÖØ-öø-ÿ0-9]/.test(texto)) return '';
+    return upper(texto);
+  }
+
+  function ordenarAvisos(lista) {
+    return [AVISO.ignorado, AVISO.semDose, AVISO.zeros].filter(function (a) { return lista.indexOf(a) !== -1; });
+  }
+
+  function item(original, nome, status, warnings, extra) {
+    return {
+      original: original,
+      nome: nome,
+      status: status,
+      warnings: ordenarAvisos(warnings),
+      posologia: extra.posologia || '',
+      codigo: extra.codigo == null ? null : extra.codigo,
+      regra: extra.regra || null,
+      forma: extra.forma || 'comprimido'
+    };
+  }
+
+  function interpretarLinhaCodigo(linha, dict) {
+    var original = String(linha || '').trim();
+    if (!original || ehCabecalho(original, dict)) return null;
+    var tokens = tokenizar(tirarFrequenciaDose(original));
+    var formaInfo = tirarForma(tokens);
+    tokens = formaInfo.tokens;
+    var encontrado = acharCodigo(tokens);
+    var nomeTokens = encontrado ? tokens.slice(0, encontrado.inicio) : tokens;
+    var extraTokens = encontrado ? tokens.slice(encontrado.fim) : [];
+    var limpo = limparNome(nomeTokens.join(' '), dict);
+    var forma = formaInfo.forma || limpo.forma || 'comprimido';
+    if (!temLetra(limpo.nome)) {
+      return item(original, upper(original), 'nao-interpretado', [], { posologia: '(REVISAR POSOLOGIA)' });
+    }
+    var regra = escolherRegra(limpo.nome, dict);
+    var warnings = [];
+    if (!temDose(limpo.nome)) warnings.push(AVISO.semDose);
+    var extra = limparExtra(extraTokens);
+    var posicoes = encontrado ? encontrado.posicoes : null;
+    var codigo = posicoes ? posicoes.map(fmtCanon).join('-') : null;
+
+    if (regra === 'fixa' || regra === 'jejum') {
+      if (posicoes) warnings.unshift(AVISO.ignorado);
+      var fraseFixa = regra === 'fixa' ? upper(textoFixo(limpo.nome, dict)) : FRASE_JEJUM;
+      fraseFixa = aplicarCaps(fraseFixa, forma);
+      if (extra) fraseFixa += ' ' + extra;
+      return item(original, limpo.nome, warnings.length ? 'conferir' : 'ok', warnings, {
+        posologia: fraseFixa, codigo: codigo, regra: regra, forma: forma
+      });
+    }
+
+    if (!posicoes) {
+      return item(original, limpo.nome, 'conferir', warnings, {
+        posologia: '(REVISAR POSOLOGIA)', regra: regra, forma: forma
+      });
+    }
+
+    if (posicoes.every(function (q) { return q === 0; })) {
+      warnings.push(AVISO.zeros);
+      return item(original, limpo.nome, 'conferir', warnings, {
+        posologia: '(REVISAR POSOLOGIA)', codigo: codigo, regra: regra, forma: forma
+      });
+    }
+
+    var frase = regra === 'refeicoes' ? fraseRefeicao(posicoes, forma) : fraseGeral(posicoes, forma);
+    if (extra) frase += ' ' + extra;
+    return item(original, limpo.nome, warnings.length ? 'conferir' : 'ok', warnings, {
+      posologia: frase, codigo: codigo, regra: regra, forma: forma
+    });
+  }
+
+  function interpretarCodigo(entrada, dict) {
+    return String(entrada || '').replace(/\r\n/g, '\n').split('\n').map(function (l) {
+      return interpretarLinhaCodigo(l, dict);
+    }).filter(Boolean);
+  }
+
+  function extrairQ(trecho) {
+    var f = foldIdx(trecho).replace(/\d+(?:[.,]\d+)?(?:\/\d+(?:[.,]\d+)?)?\s*(?:mg|mcg|g|ui|ml|%)\b/g, ' ');
+    var m = f.match(/(\d+)\s+e\s+1\s*\/\s*2/);
+    if (m) return parseInt(m[1], 10) * 4 + 2;
+    m = f.match(/½|¼|¾/);
+    if (m) return quartosDeToken(m[0]);
+    m = f.match(/(\d+)\s*\/\s*(\d+)/);
+    if (m) return quartosDeToken(m[1] + '/' + m[2]);
+    m = f.match(/(\d+)[.,](\d+)/);
+    if (m) return quartosDeToken(m[1] + ',' + m[2]);
+    m = f.match(/(\d+)/);
+    if (m) return parseInt(m[1], 10) * 4;
+    return null;
+  }
+
+  function qAntes(f, re) {
+    var m = re.exec(f);
+    var trecho = m ? f.slice(0, m.index) : f;
+    var q = extrairQ(trecho);
+    return q == null ? 4 : q;
+  }
+
+  function somarHorarios(f) {
+    var re = /\b(cafe da manha|cafe|manha|almoco|tarde|jantar|noite|deitar|ceia)\b/g;
+    var slots = [0, 0, 0];
+    var achou = false;
+    var prev = 0;
+    var atual = null;
+    var m;
+    while ((m = re.exec(f))) {
+      var tipo = m[1];
+      var slot = (tipo === 'cafe da manha' || tipo === 'cafe' || tipo === 'manha') ? 0 : (tipo === 'almoco' || tipo === 'tarde') ? 1 : 2;
+      var q = extrairQ(f.slice(prev, m.index));
+      if (q != null) atual = q;
+      if (atual == null) atual = 4;
+      slots[slot] += atual;
+      prev = m.index + m[0].length;
+      achou = true;
+    }
+    return achou ? slots : null;
+  }
+
+  function codigoDaPosologia(texto) {
+    var f = foldIdx(texto);
+    if (/6\s*\/\s*6\s*h/.test(f)) {
+      var q6 = qAntes(f, /6\s*\/\s*6\s*h/);
+      return [q6, q6, q6, q6];
+    }
+    if (/8\s*\/\s*8\s*h/.test(f)) {
+      var q8 = qAntes(f, /8\s*\/\s*8\s*h/);
+      return [q8, q8, q8];
+    }
+    if (/12\s*\/\s*12\s*h/.test(f)) {
+      var q12 = qAntes(f, /12\s*\/\s*12\s*h/);
+      return [q12, 0, q12];
+    }
+    if (/24\s*\/\s*24\s*h/.test(f)) return [qAntes(f, /24\s*\/\s*24\s*h/), 0, 0];
+    if (/\d+\s*x\s+ao\s+dia/.test(f)) return [qAntes(f, /\d+\s*x\s+ao\s+dia/), 0, 0];
+    if (/\buma\s+vez\s+por\s+semana\b/.test(f) || /\d+\s+vez(?:es)?\s+por\s+semana\b/.test(f)) {
+      return [qAntes(f, /\buma\s+vez\s+por\s+semana\b|\d+\s+vez(?:es)?\s+por\s+semana\b/), 0, 0];
+    }
+    if (/\bem jejum\b/.test(f)) {
+      var qj = qAntes(f, /\bem jejum\b/);
+      return [qj, 0, 0];
+    }
+    return somarHorarios(f);
+  }
+
+  function blocosDeTexto(entrada, dict) {
+    var linhas = String(entrada || '').replace(/\r\n/g, '\n').split('\n');
+    var blocos = [];
+    var atual = [];
+    function flush() {
+      if (atual.length) blocos.push(atual.slice());
+      atual = [];
+    }
+    linhas.forEach(function (linha) {
+      var t = linha.trim();
+      if (!t) { flush(); return; }
+      if (ehCabecalho(t, dict)) return;
+      if (/^[-–—•*]/.test(t) && atual.length) flush();
+      atual.push(t);
+    });
+    flush();
+    return blocos;
+  }
+
+  function dividirBloco(linhas) {
+    var uteis = linhas.filter(Boolean);
+    if (!uteis.length) return null;
+    if (uteis.length === 1) {
+      var l = uteis[0].replace(/^[-–—•*]\s*/, '');
+      var f = foldIdx(l);
+      var idx = f.search(/\btomar\b/);
+      if (idx > 0) return { nome: l.slice(0, idx).trim(), posologia: l.slice(idx).trim(), original: uteis[0] };
+      return { nome: l.trim(), posologia: '', original: uteis[0] };
+    }
+    return {
+      nome: uteis[0].replace(/^[-–—•*]\s*/, '').trim(),
+      posologia: uteis.slice(1).join(' ').trim(),
+      original: uteis.join('\n')
+    };
+  }
+
+  function interpretarBlocoTexto(bloco, dict) {
+    var partes = dividirBloco(bloco);
+    if (!partes) return null;
+    var limpo = limparNome(partes.nome, dict);
+    if (!temLetra(limpo.nome) && !temLetra(partes.posologia)) {
+      return item(partes.original, upper(partes.original), 'nao-interpretado', [], { posologia: '(REVISAR POSOLOGIA)' });
+    }
+    if (!temLetra(limpo.nome)) {
+      return item(partes.original, upper(partes.original), 'nao-interpretado', [], { posologia: '(REVISAR POSOLOGIA)' });
+    }
+    var warnings = [];
+    if (!temDose(limpo.nome)) warnings.push(AVISO.semDose);
+    var regra = escolherRegra(limpo.nome, dict);
+    if (regra === 'fixa') {
+      return item(partes.original, limpo.nome, warnings.length ? 'conferir' : 'ok', warnings, {
+        codigo: '1-0-0', regra: 'fixa', forma: limpo.forma || 'comprimido'
+      });
+    }
+    if (!partes.posologia || fold(partes.posologia) === 'revisar posologia') {
+      return item(partes.original, limpo.nome, 'conferir', warnings, { regra: regra, forma: limpo.forma || 'comprimido' });
+    }
+    var pos = codigoDaPosologia(partes.posologia);
+    if (!pos) {
+      return item(partes.original, limpo.nome, 'nao-interpretado', warnings, { regra: regra, forma: limpo.forma || 'comprimido' });
+    }
+    return item(partes.original, limpo.nome, warnings.length ? 'conferir' : 'ok', warnings, {
+      codigo: pos.map(fmtCanon).join('-'),
+      regra: regra,
+      forma: limpo.forma || 'comprimido'
+    });
+  }
+
+  function interpretarTexto(entrada, dict) {
+    return blocosDeTexto(entrada, dict).map(function (b) { return interpretarBlocoTexto(b, dict); }).filter(Boolean);
+  }
+
+  function formatarTexto(itens, cabecalho) {
+    if (!itens.length) return '';
+    var head = upper(String(cabecalho || 'USO ORAL CONTÍNUO:').trim()) || 'USO ORAL CONTÍNUO:';
+    var blocos = itens.map(function (it) {
+      return '-' + (it.nome || upper(it.original)) + '\n' + (it.posologia || '(REVISAR POSOLOGIA)');
+    });
+    return head + '\n\n' + blocos.join('\n\n') + '\n';
+  }
+
+  function formatarCodigo(itens) {
+    if (!itens.length) return '';
+    return itens.map(function (it) {
+      var nome = it.nome || upper(it.original);
+      return it.codigo ? nome + ' ' + it.codigo : nome;
+    }).join('\n') + '\n';
+  }
+
+  function migrarDicionariosSalvos(textos) {
+    var src = textos || {};
+    var out = {};
+    Object.keys(src).forEach(function (k) { out[k] = src[k]; });
+    var linhas = String(out.fixa || '').split('\n');
+    var temAddera = false;
+    var temGrupo = false;
+    var grupo = { 'vitamina d': 1, vitd: 1, 'd prev': 1, 'addera d3': 1, doss: 1, 'alta d': 1, addera: 1 };
+    var migradas = linhas.map(function (l) {
+      if (!String(l).trim() || l.indexOf('=') === -1) return l;
+      var i = l.indexOf('=');
+      var nome = l.slice(0, i).trim();
+      var frase = l.slice(i + 1).trim();
+      var fn = fold(nome);
+      if (grupo[fn]) temGrupo = true;
+      if (fn === 'addera') temAddera = true;
+      if (fold(frase) === fold(FRASE_VITD_ANTIGA)) return nome + ' = ' + FRASE_VITD;
+      return l;
+    });
+    if (temGrupo && !temAddera) migradas.push('ADDERA = ' + FRASE_VITD);
+    out.fixa = migradas.join('\n').replace(/\n{2,}/g, '\n').replace(/^\n|\n$/g, '');
+    return out;
+  }
+
+  function detectarSentido(entrada) {
+    return /\btomar\b/i.test(String(entrada || '')) ? 'texto' : 'codigo';
+  }
+
+  function transcrever(entrada, opcoes) {
+    var opt = opcoes || {};
+    var dict = completarDict(opt.dicionarios);
+    var sentido = opt.sentido || 'auto';
+    if (sentido !== 'codigo' && sentido !== 'texto') sentido = detectarSentido(entrada);
+    var itens = sentido === 'texto' ? interpretarTexto(entrada, dict) : interpretarCodigo(entrada, dict);
+    var saida = sentido === 'texto' ? formatarCodigo(itens) : formatarTexto(itens, dict.cabecalho);
+    return { sentido: sentido, saida: saida, itens: itens };
+  }
+
+  var api = {
+    versao: 2,
+    transcrever: transcrever,
+    limparNome: limparNome,
+    fold: fold,
+    detectarSentido: detectarSentido,
+    dicionariosPadrao: dicionariosPadrao,
+    dicionariosDeTexto: dicionariosDeTexto,
+    textosDeDicionarios: textosDeDicionarios,
+    migrarDicionariosSalvos: migrarDicionariosSalvos,
+    exemplos: { codigo: EXEMPLO_CODIGO, texto: EXEMPLO_TEXTO }
+  };
+
+  if (typeof module !== 'undefined' && module.exports) module.exports = api;
+  if (typeof window !== 'undefined') window.Transcritor = api;
+})();
+</script>
+<script id="transcritor-ui">
+(function () {
+  'use strict';
+  var T = window.Transcritor;
+  var CHAVE = 'transcritor-receita-dicionarios-v2';
+  var sentido = 'auto';
+  var entrada = document.getElementById('entrada');
+  var resultado = document.getElementById('resultado');
+  var resumo = document.getElementById('resumo');
+  var selDetectado = document.getElementById('sentido-detectado');
+  var gradeDic = document.getElementById('grade-dic');
+  var confirma = document.getElementById('confirma-restaurar');
+  var campos = {};
+  var ESQUEMA = [
+    ['cabecalho', 'Cabeçalho', 'Linha do topo. Padrão: USO ORAL CONTÍNUO:', false],
+    ['abreviacoes', 'Abreviações', 'SIGLA = EXPANSÃO', false],
+    ['fixa', 'Posologias fixas', 'NOME = TEXTO. Ignora o código.', true],
+    ['jejum', 'Lista de jejum', 'Um fármaco por linha. Ignora o código.', false],
+    ['refeicoes', 'Lista de refeições', 'Um fármaco por linha.', false],
+    ['sais', 'Sais', 'Prefixo “SAL DE”, um por linha. Íon depois de DE não sai.', false],
+    ['sufixos', 'Sufixos', 'Nunca removidos se forem a 1ª palavra.', false]
+  ];
+
+  function lerSalvo() {
+    try {
+      var bruto = localStorage.getItem(CHAVE);
+      return bruto ? JSON.parse(bruto) : null;
+    } catch (e) { return null; }
+  }
+  function gravar(bruto) {
+    try { localStorage.setItem(CHAVE, JSON.stringify(bruto)); } catch (e) { /* modo privado */ }
+  }
+  function dictAtual() {
+    var bruto = {};
+    ESQUEMA.forEach(function (item) { bruto[item[0]] = campos[item[0]].value; });
+    return T.dicionariosDeTexto(bruto);
+  }
+  function preencher(textos) {
+    ESQUEMA.forEach(function (item) { campos[item[0]].value = textos[item[0]] || ''; });
+  }
+  function selo(status) {
+    if (status === 'ok') return 'ok';
+    if (status === 'conferir') return 'conferir';
+    return 'não interpretado';
+  }
+  function saidaItem(it, sentidoAtual) {
+    if (sentidoAtual === 'texto') return it.codigo ? it.nome + ' ' + it.codigo : it.nome;
+    return '-' + it.nome + '\n' + (it.posologia || '(REVISAR POSOLOGIA)');
+  }
+  function render(res) {
+    var rotulo = res.sentido === 'texto' ? 'texto → código' : 'código → texto';
+    selDetectado.textContent = sentido === 'auto' ? 'Detectado: ' + rotulo : 'Manual: ' + rotulo;
+    var vazio = document.getElementById('vazio-conf');
+    var tabela = document.getElementById('tabela-wrap');
+    var corpo = document.getElementById('corpo-conf');
+    resumo.innerHTML = '';
+    corpo.innerHTML = '';
+    if (!res.itens.length) {
+      vazio.hidden = false;
+      tabela.hidden = true;
+      return;
+    }
+    vazio.hidden = true;
+    tabela.hidden = false;
+    var counts = { ok: 0, conferir: 0, 'nao-interpretado': 0 };
+    res.itens.forEach(function (it) { counts[it.status] = (counts[it.status] || 0) + 1; });
+    ['ok', 'conferir', 'nao-interpretado'].forEach(function (k) {
+      var chip = document.createElement('span');
+      chip.className = 'contagem';
+      chip.textContent = counts[k] + ' ' + (k === 'nao-interpretado' ? 'não interpretado' : k);
+      resumo.appendChild(chip);
+    });
+    res.itens.forEach(function (it) {
+      var tr = document.createElement('tr');
+      var tdE = document.createElement('td');
+      tdE.className = 'mono';
+      tdE.textContent = it.original;
+      var tdS = document.createElement('td');
+      tdS.className = 'mono';
+      tdS.textContent = saidaItem(it, res.sentido);
+      var tdSel = document.createElement('td');
+      var badge = document.createElement('span');
+      badge.className = 'selo ' + it.status;
+      badge.textContent = selo(it.status);
+      tdSel.appendChild(badge);
+      var tdA = document.createElement('td');
+      if (it.warnings.length) {
+        var ul = document.createElement('ul');
+        ul.className = 'avisos';
+        it.warnings.forEach(function (msg) {
+          var li = document.createElement('li');
+          li.textContent = msg;
+          ul.appendChild(li);
+        });
+        tdA.appendChild(ul);
+      }
+      tr.appendChild(tdE);
+      tr.appendChild(tdS);
+      tr.appendChild(tdSel);
+      tr.appendChild(tdA);
+      corpo.appendChild(tr);
+    });
+  }
+  function gerar() {
+    var res = T.transcrever(entrada.value, { sentido: sentido, dicionarios: dictAtual() });
+    resultado.value = res.saida;
+    render(res);
+  }
+  ESQUEMA.forEach(function (item) {
+    var wrap = document.createElement('div');
+    wrap.className = 'campo' + (item[3] ? ' largo' : '');
+    var lab = document.createElement('label');
+    lab.setAttribute('for', 'dic-' + item[0]);
+    lab.innerHTML = item[1] + ' <span class="formato">' + item[2] + '</span>';
+    var area = document.createElement('textarea');
+    area.id = 'dic-' + item[0];
+    area.spellcheck = false;
+    wrap.appendChild(lab);
+    wrap.appendChild(area);
+    gradeDic.appendChild(wrap);
+    campos[item[0]] = area;
+    area.addEventListener('input', function () {
+      var bruto = {};
+      ESQUEMA.forEach(function (it) { bruto[it[0]] = campos[it[0]].value; });
+      gravar(bruto);
+      gerar();
+    });
+  });
+  document.querySelectorAll('.segmento button').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      sentido = btn.getAttribute('data-sentido');
+      document.querySelectorAll('.segmento button').forEach(function (b) {
+        b.setAttribute('aria-pressed', b === btn ? 'true' : 'false');
+      });
+      gerar();
+    });
+  });
+  document.getElementById('copiar').addEventListener('click', function () {
+    var btn = document.getElementById('copiar');
+    var texto = resultado.value;
+    function ok(msg) {
+      btn.textContent = msg;
+      setTimeout(function () { btn.textContent = 'Copiar resultado'; }, 1400);
+    }
+    if (!texto.trim()) { ok('Nada para copiar'); return; }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(texto).then(function () { ok('Copiado'); }, function () {
+        resultado.focus();
+        resultado.select();
+        document.execCommand('copy');
+        ok('Copiado');
+      });
+    } else {
+      resultado.focus();
+      resultado.select();
+      try { document.execCommand('copy'); } catch (e) { /* segue */ }
+      ok('Copiado');
+    }
+  });
+  document.getElementById('ex-codigo').addEventListener('click', function () {
+    entrada.value = T.exemplos.codigo;
+    gerar();
+  });
+  document.getElementById('ex-texto').addEventListener('click', function () {
+    entrada.value = T.exemplos.texto;
+    gerar();
+  });
+  document.getElementById('limpar').addEventListener('click', function () {
+    entrada.value = '';
+    gerar();
+  });
+  entrada.addEventListener('input', gerar);
+  document.getElementById('restaurar').addEventListener('click', function () { confirma.hidden = false; });
+  document.getElementById('confirma-nao').addEventListener('click', function () { confirma.hidden = true; });
+  document.getElementById('confirma-sim').addEventListener('click', function () {
+    try { localStorage.removeItem(CHAVE); } catch (e) { /* ignora */ }
+    preencher(T.textosDeDicionarios(T.dicionariosPadrao()));
+    confirma.hidden = true;
+    gerar();
+  });
+  var salvo = lerSalvo();
+  if (salvo && typeof salvo === 'object') {
+    var migrado = T.migrarDicionariosSalvos(salvo);
+    preencher(migrado);
+    if ((migrado.fixa || '') !== (salvo.fixa || '')) gravar(migrado);
+  } else preencher(T.textosDeDicionarios(T.dicionariosPadrao()));
+  gerar();
+})();
+</script>
+</body>
+</html>
